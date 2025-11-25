@@ -202,6 +202,8 @@ Delete a scheduled task by its timestamp.
 Description: """
 Schedule a future task or reminder.
 Use either delay (in minutes, hours "2h", days "1d") OR specific time (UTC).
+The message you write here will be sent back to you as [SCHEDULED_TASK] message in a new automated chat.
+When you receive [SCHEDULED_TASK] - execute it without user interaction (no human present).
 """
 
 <getWebPublishingGuide/>
