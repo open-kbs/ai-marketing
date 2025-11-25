@@ -252,40 +252,93 @@ const CommandCircle = ({ command, index, response }) => {
 };
 
 // Main component
-const CommandRenderer = ({ content, responseData }) => {
-    const commands = parseCommands(content);
+const CommandRenderer = ({ content, responseData, markdownHandler }) => {
+    // Filter out GEMINI_META comments
+    const cleanContent = content.replace(/<!--GEMINI_META:.*?-->/gs, '').trim();
+    const commands = parseCommands(cleanContent);
 
     if (commands.length === 0) return null;
 
-    // For single command, pass the response directly
-    // For multiple commands, we'd need more complex logic
-    const getResponseForCommand = (cmd, index) => {
-        if (commands.length === 1) {
-            return responseData;
+    // Parse content to separate text and commands
+    const parseContentWithText = () => {
+        const parts = [];
+        let lastIndex = 0;
+
+        commands.forEach((cmd, cmdIndex) => {
+            const cmdStart = cleanContent.indexOf(cmd.fullMatch, lastIndex);
+
+            // Add text before command if exists
+            if (cmdStart > lastIndex) {
+                const textBefore = cleanContent.substring(lastIndex, cmdStart).trim();
+                if (textBefore) {
+                    parts.push({ type: 'text', content: textBefore });
+                }
+            }
+
+            // Add command
+            parts.push({
+                type: 'command',
+                command: cmd,
+                index: cmdIndex,
+                response: commands.length === 1 ? responseData : responseData
+            });
+
+            lastIndex = cmdStart + cmd.fullMatch.length;
+        });
+
+        // Add remaining text after last command
+        if (lastIndex < cleanContent.length) {
+            const textAfter = cleanContent.substring(lastIndex).trim();
+            if (textAfter) {
+                parts.push({ type: 'text', content: textAfter });
+            }
         }
-        // For multiple commands, response mapping would go here
-        return responseData;
+
+        return parts;
     };
 
-    // Show compact view for commands
+    const contentParts = parseContentWithText();
+
+    // Render mixed content
     return (
-        <Box
-            sx={{
-                display: 'inline-flex',
-                gap: 0.5,
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                my: 1
-            }}
-        >
-            {commands.map((cmd, index) => (
-                <CommandCircle
-                    key={index}
-                    command={cmd}
-                    index={index}
-                    response={getResponseForCommand(cmd, index)}
-                />
-            ))}
+        <Box sx={{ my: 1 }}>
+            {contentParts.map((part, index) => {
+                if (part.type === 'text') {
+                    // Use markdownHandler if available, otherwise render as plain text
+                    if (markdownHandler) {
+                        return (
+                            <Box key={`text-${index}`} sx={{ display: 'inline-block', verticalAlign: 'top' }}>
+                                {markdownHandler(part.content)}
+                            </Box>
+                        );
+                    } else {
+                        return (
+                            <Typography
+                                key={`text-${index}`}
+                                component="span"
+                                sx={{
+                                    display: 'inline',
+                                    mr: 1,
+                                    verticalAlign: 'middle'
+                                }}
+                            >
+                                {part.content}
+                            </Typography>
+                        );
+                    }
+                } else if (part.type === 'command') {
+                    return (
+                        <Box key={`cmd-${index}`} sx={{ display: 'inline-block', mx: 0.5, verticalAlign: 'middle' }}>
+                            <CommandCircle
+                                command={part.command}
+                                index={part.index}
+                                response={part.response}
+                            />
+                        </Box>
+                    );
+                }
+                return null;
+            })}
             {responseData && responseData.type === 'VIDEO_PENDING' && responseData.data?.message && (
                 <Box sx={{
                     display: 'inline-flex',

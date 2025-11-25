@@ -36,7 +36,7 @@ export function getQueryParamValue(paramName) {
 
 const onRenderChatMessage = async (params) => {
     let { content, role } = params.messages[params.msgIndex];
-    const { initDB, KB, msgIndex, messages } = params;
+    const { initDB, KB, msgIndex, messages, markdownHandler } = params;
 
     if (getQueryParamValue('debug')) return;
 
@@ -109,7 +109,7 @@ const onRenderChatMessage = async (params) => {
             }
         }
 
-        return <CommandRenderer content={content} responseData={responseData} />;
+        return <CommandRenderer content={content} responseData={responseData} markdownHandler={markdownHandler} />;
     }
 
     return null;
