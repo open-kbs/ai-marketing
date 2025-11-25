@@ -93,48 +93,94 @@ const parseCommands = (content) => {
 };
 
 // Single command circle component
-const CommandCircle = ({ command, index }) => {
+const CommandCircle = ({ command, index, response }) => {
     const [hovering, setHovering] = useState(false);
     const IconComponent = commandIcons[command.name] || BoltIcon;
 
-    // Format tooltip content based on command data
+    // Determine if command has completed (has response)
+    const hasResponse = !!response;
+    const isSuccess = response && !response.error;
+    const isError = response && response.error;
+
+    // Format tooltip content to show both request and response
     const getTooltipContent = () => {
-        if (!command.data) return command.name;
+        return (
+            <Box sx={{ p: 1, maxWidth: 400 }}>
+                {/* Command Name */}
+                <Typography variant="caption" sx={{
+                    fontWeight: 'bold',
+                    color: '#4CAF50',
+                    display: 'block',
+                    mb: 0.5
+                }}>
+                    {command.name}
+                </Typography>
 
-        if (typeof command.data === 'object') {
-            // Special formatting for setMemory
-            if (command.name === 'setMemory' && command.data.itemId) {
-                return (
-                    <Box sx={{ p: 0.5 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#fff' }}>
-                            {command.data.itemId}
+                {/* Request Parameters */}
+                {command.data && (
+                    <>
+                        <Typography variant="caption" sx={{
+                            color: '#90CAF9',
+                            fontSize: '10px',
+                            fontWeight: 'bold'
+                        }}>
+                            REQUEST:
                         </Typography>
-                        {command.data.value && (
-                            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontSize: '10px' }}>
-                                {typeof command.data.value === 'object'
-                                    ? Object.keys(command.data.value).join(', ')
-                                    : String(command.data.value).substring(0, 50) + '...'
-                                }
-                            </Typography>
-                        )}
-                    </Box>
-                );
-            }
+                        <Typography variant="caption" sx={{
+                            display: 'block',
+                            fontSize: '10px',
+                            color: '#fff',
+                            ml: 1,
+                            mb: 0.5,
+                            fontFamily: 'monospace'
+                        }}>
+                            {typeof command.data === 'object'
+                                ? JSON.stringify(command.data, null, 2).substring(0, 300)
+                                : String(command.data).substring(0, 200)
+                            }
+                        </Typography>
+                    </>
+                )}
 
-            // Generic object display
-            return (
-                <Box sx={{ p: 0.5 }}>
-                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#fff' }}>
-                        {command.name}
-                    </Typography>
-                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5, fontSize: '10px' }}>
-                        {JSON.stringify(command.data, null, 2).substring(0, 200)}
-                    </Typography>
-                </Box>
-            );
-        }
+                {/* Response */}
+                {response && (
+                    <>
+                        <Typography variant="caption" sx={{
+                            color: response.error ? '#FF6B6B' : '#81C784',
+                            fontSize: '10px',
+                            fontWeight: 'bold'
+                        }}>
+                            RESPONSE:
+                        </Typography>
+                        <Typography variant="caption" sx={{
+                            display: 'block',
+                            fontSize: '10px',
+                            color: '#fff',
+                            ml: 1,
+                            fontFamily: 'monospace'
+                        }}>
+                            {response.error
+                                ? `Error: ${response.error}`
+                                : response.type || JSON.stringify(response, null, 2).substring(0, 200)
+                            }
+                        </Typography>
+                    </>
+                )}
 
-        return command.name;
+                {/* Loading state */}
+                {!response && (
+                    <Typography variant="caption" sx={{
+                        display: 'block',
+                        fontSize: '10px',
+                        color: '#FFA726',
+                        fontStyle: 'italic',
+                        mt: 0.5
+                    }}>
+                        Waiting for response...
+                    </Typography>
+                )}
+            </Box>
+        );
     };
 
     return (
@@ -160,9 +206,13 @@ const CommandCircle = ({ command, index }) => {
                     width: 36,
                     height: 36,
                     borderRadius: '50%',
-                    backgroundColor: hovering ? 'rgba(25, 118, 210, 0.15)' : 'rgba(0, 0, 0, 0.04)',
+                    backgroundColor: hovering
+                        ? (isError ? 'rgba(244, 67, 54, 0.15)' : isSuccess ? 'rgba(76, 175, 80, 0.15)' : 'rgba(158, 158, 158, 0.15)')
+                        : (isError ? 'rgba(244, 67, 54, 0.08)' : isSuccess ? 'rgba(76, 175, 80, 0.08)' : 'rgba(0, 0, 0, 0.04)'),
                     border: '2px solid',
-                    borderColor: hovering ? '#1976d2' : 'rgba(0, 0, 0, 0.12)',
+                    borderColor: hovering
+                        ? (isError ? '#f44336' : isSuccess ? '#4CAF50' : '#9e9e9e')
+                        : (isError ? 'rgba(244, 67, 54, 0.3)' : isSuccess ? 'rgba(76, 175, 80, 0.3)' : 'rgba(0, 0, 0, 0.12)'),
                     cursor: 'pointer',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     transform: hovering ? 'scale(1.1)' : 'scale(1)',
@@ -183,7 +233,9 @@ const CommandCircle = ({ command, index }) => {
                 <IconComponent
                     sx={{
                         fontSize: 18,
-                        color: hovering ? '#1976d2' : 'rgba(0, 0, 0, 0.54)'
+                        color: hovering
+                            ? (isError ? '#f44336' : isSuccess ? '#4CAF50' : '#9e9e9e')
+                            : (isError ? 'rgba(244, 67, 54, 0.7)' : isSuccess ? 'rgba(76, 175, 80, 0.7)' : 'rgba(0, 0, 0, 0.54)')
                     }}
                 />
             </Box>
@@ -196,6 +248,16 @@ const CommandRenderer = ({ content, responseData }) => {
     const commands = parseCommands(content);
 
     if (commands.length === 0) return null;
+
+    // For single command, pass the response directly
+    // For multiple commands, we'd need more complex logic
+    const getResponseForCommand = (cmd, index) => {
+        if (commands.length === 1) {
+            return responseData;
+        }
+        // For multiple commands, response mapping would go here
+        return responseData;
+    };
 
     // Show compact view for commands
     return (
@@ -213,26 +275,9 @@ const CommandRenderer = ({ content, responseData }) => {
                     key={index}
                     command={cmd}
                     index={index}
+                    response={getResponseForCommand(cmd, index)}
                 />
             ))}
-            {responseData && responseData.error && (
-                <Chip
-                    label="Error"
-                    size="small"
-                    color="error"
-                    variant="outlined"
-                    sx={{ ml: 1, height: 24 }}
-                />
-            )}
-            {responseData && responseData.type === 'MEMORY_UPDATED' && (
-                <Chip
-                    label="✓ Saved"
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                    sx={{ ml: 1, height: 24 }}
-                />
-            )}
             {responseData && responseData.type === 'VIDEO_PENDING' && responseData.data?.message && (
                 <Box sx={{
                     display: 'inline-flex',
