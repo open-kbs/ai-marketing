@@ -1,0 +1,55 @@
+{
+  "kbId": "139lk6e7clij",
+  "chatVendor": "google",
+  "kbDescription": "AI Marketing Assistant",
+  "kbTitle": "AI Marketing",
+  "model": "gemini-3-pro",
+  "inputTools": [
+    "speechToText"
+  ],
+  "embeddingModel": "text-embedding-3-large",
+  "embeddingDimension": 3072,
+  "searchEngine": "VectorDB",
+  "itemTypes": {
+    "memory": {
+      "attributes": [
+        {
+          "unit": "",
+          "label": "itemId",
+          "placeholder": "itemId",
+          "encrypted": false,
+          "attrName": "itemId",
+          "attrType": "itemId"
+        },
+        {
+          "unit": "",
+          "label": "body",
+          "placeholder": "body",
+          "encrypted": true,
+          "attrName": "body",
+          "attrType": "body"
+        }
+      ]
+    }
+  },
+  "userId": "public",
+  "appId": "d84af426a435",
+  "active": true,
+  "category": "business",
+  "requiredServices": [
+    {
+      "interface": "text-generation",
+      "type": "main-chat-model"
+    }
+  ],
+  "optionalServices": [],
+  "slug": "ai-marketing",
+  "options": {
+    "priorityItems": [
+      {
+        "limit": 100,
+        "prefix": "memory"
+      }
+    ]
+  }
+}
