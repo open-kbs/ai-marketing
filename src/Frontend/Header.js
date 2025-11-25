@@ -45,19 +45,7 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs }) => {
                     const welcomeMessage = {
                         msgId: `${+new Date()-10000}-${Math.floor(100000 + Math.random() * 900000)}`,
                         role: 'assistant',
-                        content: `Welcome! I'm your AI Marketing Assistant 🚀
-
-I can help you with:
-• Creating compelling content and campaigns
-• Generating professional images and videos
-• Building landing pages and marketing materials
-• Planning your social media strategy
-
-To provide the best recommendations for YOUR specific needs, let's start with a quick intro.
-
-**Tell me about your business - what makes it unique?**
-
-💡 *Tip: The more details you share, the better I can tailor my suggestions!*`
+                        content: `Hi! I'm your AI Marketing Assistant. Tell me about your business so I can help you with your marketing needs.`
                     };
 
                     if (setMessages) {
