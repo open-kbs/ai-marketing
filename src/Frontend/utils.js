@@ -1,5 +1,5 @@
 export function getBaseURL(KB) {
-    return `https://web.openkbs.com/${KB?.kbId}/`;
+    return `https://web.file.vpc1.us/files/${KB?.kbId}/`;
 }
 
 export function generateFilename(html) {
