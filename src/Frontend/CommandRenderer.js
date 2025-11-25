@@ -126,19 +126,23 @@ const CommandCircle = ({ command, index, response }) => {
                         }}>
                             REQUEST:
                         </Typography>
-                        <Typography variant="caption" sx={{
+                        <Box sx={{
                             display: 'block',
                             fontSize: '10px',
                             color: '#fff',
                             ml: 1,
                             mb: 0.5,
-                            fontFamily: 'monospace'
+                            fontFamily: 'monospace',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            maxHeight: '200px',
+                            overflowY: 'auto'
                         }}>
                             {typeof command.data === 'object'
-                                ? JSON.stringify(command.data, null, 2).substring(0, 300)
-                                : String(command.data).substring(0, 200)
+                                ? JSON.stringify(command.data, null, 2)
+                                : String(command.data)
                             }
-                        </Typography>
+                        </Box>
                     </>
                 )}
 
@@ -152,18 +156,22 @@ const CommandCircle = ({ command, index, response }) => {
                         }}>
                             RESPONSE:
                         </Typography>
-                        <Typography variant="caption" sx={{
+                        <Box sx={{
                             display: 'block',
                             fontSize: '10px',
                             color: '#fff',
                             ml: 1,
-                            fontFamily: 'monospace'
+                            fontFamily: 'monospace',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            maxHeight: '200px',
+                            overflowY: 'auto'
                         }}>
                             {response.error
                                 ? `Error: ${response.error}`
-                                : response.type || JSON.stringify(response, null, 2).substring(0, 200)
+                                : JSON.stringify(response, null, 2)
                             }
-                        </Typography>
+                        </Box>
                     </>
                 )}
 
