@@ -233,6 +233,22 @@ const CommandRenderer = ({ content, responseData }) => {
                     sx={{ ml: 1, height: 24 }}
                 />
             )}
+            {responseData && responseData.type === 'VIDEO_PENDING' && responseData.data?.message && (
+                <Box sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    ml: 1,
+                    padding: '4px 12px',
+                    backgroundColor: '#fff3cd',
+                    border: '1px solid #ffc107',
+                    borderRadius: '4px',
+                    color: '#856404',
+                    fontSize: '13px',
+                    fontWeight: 500
+                }}>
+                    ⏳ Please wait and DO NOT refresh your browser! Video is generating...
+                </Box>
+            )}
         </Box>
     );
 };

@@ -173,7 +173,7 @@ export const getActions = (meta, event) => [
                     type: 'VIDEO_PENDING',
                     data: {
                         videoId: videoData[0].video_id,
-                        message: 'Video generation in progress. Use continueVideoPolling to check status.'
+                        message: '⏳ Video generation in progress. Please wait and DO NOT refresh your browser! Use continueVideoPolling to check status.'
                     },
                     ...meta
                 };
@@ -213,7 +213,7 @@ export const getActions = (meta, event) => [
                         type: 'VIDEO_PENDING',
                         data: {
                             videoId: videoId,
-                            message: 'Video still generating. Continue polling.'
+                            message: '⏳ Video still generating. Please wait and DO NOT refresh your browser! Continue polling.'
                         },
                         ...meta
                     };
