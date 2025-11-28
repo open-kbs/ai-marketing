@@ -24,10 +24,12 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs }) => {
     const [profileChecked, setProfileChecked] = useState(false);
     const panelParam = getQueryParamValue('panel');
     const [panelExpanded, setPanelExpandedState] = useState(() => {
-        return panelParam === 'files' || panelParam === 'access';
+        return panelParam === 'files' || panelParam === 'access' || panelParam === 'memory';
     });
     const [initialTab] = useState(() => {
-        return panelParam === 'access' ? 1 : 0;
+        if (panelParam === 'access') return 1;
+        if (panelParam === 'memory') return 2;
+        return 0;
     });
 
     // Update URL when panel state changes
@@ -120,7 +122,7 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs }) => {
                 <AgentPanel
                     openkbs={openkbs}
                     initialTab={initialTab}
-                    onTabChange={(tab) => setPanelExpanded(true, tab === 0 ? 'files' : 'access')}
+                    onTabChange={(tab) => setPanelExpanded(true, tab === 0 ? 'files' : tab === 1 ? 'access' : 'memory')}
                     onClose={() => setPanelExpanded(false)}
                 />
             )}
