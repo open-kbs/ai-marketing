@@ -58,7 +58,7 @@ const getFileIcon = (filename) => {
 };
 
 
-const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAlert }) => {
+const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAlert, setBlockingLoading }) => {
     const [currentTab, setCurrentTab] = useState(initialTab);
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -274,6 +274,7 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     const loadMemoryItems = async (reset = false) => {
         try {
             setLoading(true);
+            if (setBlockingLoading) setBlockingLoading(true);
 
             const result = await openkbs.fetchItems({
                 itemType: 'memory',
@@ -283,10 +284,19 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             });
 
             if (result && result.items) {
-                const items = result.items.map(({ item, meta }) => ({
-                    itemId: meta.itemId,
-                    value: item.body
-                }));
+                const items = result.items.map(({ item, meta }) => {
+                    let actualValue = item.body;
+
+                    // If body has a 'value' property, extract it (this is our wrapped structure)
+                    if (actualValue && typeof actualValue === 'object' && 'value' in actualValue) {
+                        actualValue = actualValue.value;
+                    }
+
+                    return {
+                        itemId: meta.itemId,
+                        value: actualValue
+                    };
+                });
 
                 if (reset) {
                     setMemoryItems(items);
@@ -306,6 +316,7 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             }
         } finally {
             setLoading(false);
+            if (setBlockingLoading) setBlockingLoading(false);
         }
     };
 
@@ -360,13 +371,11 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
 
     // Delete memory item
     const deleteMemoryItem = async (itemId) => {
+        // Optimistically remove from local state immediately
+        setMemoryItems(items => items.filter(item => item.itemId !== itemId));
+
         try {
-            setLoading(true);
-
             await openkbs.deleteItem(itemId);
-
-            // Remove from local state
-            setMemoryItems(items => items.filter(item => item.itemId !== itemId));
 
             // Show success message
             if (setSystemAlert) {
@@ -378,14 +387,16 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             }
         } catch (err) {
             console.error('Error deleting memory item:', err);
+
+            // Restore the item on error by reloading
+            await loadMemoryItems(true);
+
             if (setSystemAlert) {
                 setSystemAlert({
                     severity: 'error',
                     message: 'Failed to delete memory item. Please try again.'
                 });
             }
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -404,22 +415,33 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
 
             setLoading(true);
 
-            let value = newItemValue;
+            let value = newItemValue.trim();
             // Try to parse as JSON if it looks like JSON
-            if (typeof value === 'string' && (value.trim().startsWith('{') || value.trim().startsWith('['))) {
+            if (value.startsWith('{') || value.startsWith('[')) {
                 try {
                     value = JSON.parse(value);
                 } catch (e) {
                     // Keep as string if not valid JSON
                 }
             }
+            // If empty string, set as empty string (not null)
+            if (value === '') {
+                value = '';
+            }
 
             // Always ensure memory_ prefix
             const itemId = newItemKey.startsWith('memory_') ? newItemKey : `memory_${newItemKey}`;
+
+            // Wrap in the same structure as setMemory uses
+            const body = {
+                value: value,
+                updatedAt: new Date().toISOString()
+            };
+
             await openkbs.updateItem({
                 itemType: 'memory',
                 itemId: itemId,
-                body: value
+                body: body
             });
 
             // Reload items

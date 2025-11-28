@@ -20,7 +20,7 @@ const getQueryParamValue = (paramName) => {
     return queryParams.get(paramName);
 };
 
-const Header = ({ setRenderSettings, messages, setMessages, openkbs, setSystemAlert }) => {
+const Header = ({ setRenderSettings, messages, setMessages, openkbs, setSystemAlert, setBlockingLoading }) => {
     const [profileChecked, setProfileChecked] = useState(false);
     const panelParam = getQueryParamValue('panel');
     const [panelExpanded, setPanelExpandedState] = useState(() => {
@@ -125,6 +125,7 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs, setSystemAl
                     onTabChange={(tab) => setPanelExpanded(true, tab === 0 ? 'files' : tab === 1 ? 'access' : 'memory')}
                     onClose={() => setPanelExpanded(false)}
                     setSystemAlert={setSystemAlert}
+                    setBlockingLoading={setBlockingLoading}
                 />
             )}
         </>

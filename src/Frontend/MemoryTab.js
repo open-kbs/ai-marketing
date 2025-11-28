@@ -127,11 +127,17 @@ const MemoryTab = ({
                                             <TextField
                                                 fullWidth
                                                 multiline
-                                                rows={3}
+                                                rows={8}
                                                 value={editValues.value || ''}
                                                 onChange={(e) => setEditValues({ value: e.target.value })}
                                                 variant="outlined"
                                                 size="small"
+                                                sx={{
+                                                    '& .MuiInputBase-input': {
+                                                        fontFamily: 'monospace',
+                                                        fontSize: '12px'
+                                                    }
+                                                }}
                                             />
                                         ) : (
                                             <Typography
