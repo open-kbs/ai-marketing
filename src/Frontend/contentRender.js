@@ -20,6 +20,7 @@ const COMMAND_PATTERNS = [
     /<sendMail>[\s\S]*?<\/sendMail>/,
     /<googleSearch>[\s\S]*?<\/googleSearch>/,
     /<googleImageSearch>[\s\S]*?<\/googleImageSearch>/,
+    /<viewImage>[\s\S]*?<\/viewImage>/,
     /<webpageToText>[\s\S]*?<\/webpageToText>/,
     /<setMemory>[\s\S]*?<\/setMemory>/,
     /<deleteItem>[\s\S]*?<\/deleteItem>/,

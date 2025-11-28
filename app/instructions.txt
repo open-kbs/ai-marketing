@@ -62,6 +62,15 @@ LIST OF AVAILABLE COMMANDS:
 To execute a command, output it as text and wait for system response.
 Never use native tool calls, since all commands are parsed from the regular output messages.
 
+<viewImage>
+{
+  "url": "image URL to display"
+}
+</viewImage>
+Description: """
+Display an image in the chat when you have its URL.
+"""
+
 <webpageToText>
 {
   "url": "URL to extract content from"
@@ -98,20 +107,15 @@ ALWAYS call this BEFORE generating any video to learn optimal prompting techniqu
 
 <setMemory>
 {
-  "itemId": "memory_<descriptive_name>",
-  "value": {
-    "any": "data structure",
-    "can_be": "object, array, or simple value"
-  },
+  "itemId": "memory_target_audience",
+  "value": "Young professionals aged 25-35 interested in organic products",
   "expirationInMinutes": null
 }
 </setMemory>
 Description: """
 Store information in memory. ItemId must start with "memory_".
-VALUE CAN BE ANY DATA TYPE - object, array, string, number, etc.
-DO NOT JSON.stringify the value - just put the object/array directly.
+Value can be string, number, array or object.
 Use expiration for temporary data (optional).
-All memory items are automatically available in every conversation.
 """
 
 <deleteItem>

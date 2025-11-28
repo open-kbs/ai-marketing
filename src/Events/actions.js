@@ -289,6 +289,29 @@ export const getActions = (meta, event) => [
         }
     }],
 
+    // View specific image
+    [/<viewImage>([\s\S]*?)<\/viewImage>/s, async (match) => {
+        try {
+            const content = match[1].trim();
+            const data = JSON.parse(content);
+            const imageUrl = data.url;
+
+            return {
+                data: [
+                    { type: "text", text: `Viewing image: ${imageUrl}` },
+                    { type: "image_url", image_url: { url: imageUrl } }
+                ],
+                _meta_actions: ["REQUEST_CHAT_MODEL"]
+            };
+        } catch (e) {
+            return {
+                type: "VIEW_IMAGE_ERROR",
+                error: e.message,
+                _meta_actions: ["REQUEST_CHAT_MODEL"]
+            };
+        }
+    }],
+
     // Web scraping with JSON
     [/<webpageToText>([\s\S]*?)<\/webpageToText>/s, async (match) => {
         try {

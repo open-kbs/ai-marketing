@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { isContentHTML } from "./utils";
+import { IconButton } from '@mui/material';
+import { Tune as TuneIcon } from '@mui/icons-material';
+import AgentPanel from './AgentPanel';
 
 const getChatId = () => window?.location?.pathname?.split('/chat/')?.[1];
 
@@ -12,8 +15,32 @@ const checkBusinessProfileExists = async (openkbs) => {
     }
 };
 
+const getQueryParamValue = (paramName) => {
+    const queryParams = new URLSearchParams(window.location.search);
+    return queryParams.get(paramName);
+};
+
 const Header = ({ setRenderSettings, messages, setMessages, openkbs }) => {
     const [profileChecked, setProfileChecked] = useState(false);
+    const panelParam = getQueryParamValue('panel');
+    const [panelExpanded, setPanelExpandedState] = useState(() => {
+        return panelParam === 'files' || panelParam === 'access';
+    });
+    const [initialTab] = useState(() => {
+        return panelParam === 'access' ? 1 : 0;
+    });
+
+    // Update URL when panel state changes
+    const setPanelExpanded = (value, tab = 'files') => {
+        const url = new URL(window.location.href);
+        if (value) {
+            url.searchParams.set('panel', tab);
+        } else {
+            url.searchParams.delete('panel');
+        }
+        window.history.replaceState({}, '', url.toString());
+        setPanelExpandedState(value);
+    };
 
     useEffect(() => {
         setRenderSettings({
@@ -60,7 +87,45 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs }) => {
         }
     }, [messages, setMessages, openkbs, profileChecked]);
 
-    return null; // No UI components needed
+    return (
+        <>
+            {/* Panel Button - only show when not expanded */}
+            {!panelExpanded && (
+                <IconButton
+                    onClick={() => setPanelExpanded(true, 'files')}
+                    sx={{
+                        position: 'absolute',
+                        top: window.innerWidth < 960 ? '90px' : '110px',
+                        left: window.innerWidth < 960 ? '20px' : '340px',
+                        backgroundColor: 'white',
+                        color: 'primary.main',
+                        width: 40,
+                        height: 40,
+                        border: '1px solid #e0e0e0',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        '&:hover': {
+                            backgroundColor: '#f5f5f5',
+                            transform: 'scale(1.05)'
+                        },
+                        transition: 'all 0.2s',
+                        zIndex: 1200
+                    }}
+                >
+                    <TuneIcon fontSize="small" />
+                </IconButton>
+            )}
+
+            {/* Agent Panel */}
+            {panelExpanded && openkbs && (
+                <AgentPanel
+                    openkbs={openkbs}
+                    initialTab={initialTab}
+                    onTabChange={(tab) => setPanelExpanded(true, tab === 0 ? 'files' : 'access')}
+                    onClose={() => setPanelExpanded(false)}
+                />
+            )}
+        </>
+    );
 };
 
 export default Header;
