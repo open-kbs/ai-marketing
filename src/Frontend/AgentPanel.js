@@ -25,6 +25,7 @@ import {
     Folder as FolderIcon,
     InsertDriveFile as FileIcon,
     Delete as DeleteIcon,
+    Edit as EditIcon,
     VpnKey as AccessIcon,
     FolderOpen as FilesIcon,
     Close as CloseIcon,
@@ -65,10 +66,10 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     const [error, setError] = useState(null);
     const [currentPath, setCurrentPath] = useState([]);
     const [deleteDialog, setDeleteDialog] = useState({ open: false, file: null });
+    const [renameDialog, setRenameDialog] = useState({ open: false, file: null });
+    const [newFileName, setNewFileName] = useState('');
     const [shares, setShares] = useState([]);
     const [shareEmail, setShareEmail] = useState('');
-    const [sharingError, setSharingError] = useState('');
-    const [sharingSuccess, setSharingSuccess] = useState('');
     // Memory CRUD state
     const [memoryItems, setMemoryItems] = useState([]);
     const [memoryLimit, setMemoryLimit] = useState(20);
@@ -154,29 +155,66 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     const deleteFile = async (file) => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('kbJWT');
 
-            await fetch(KB_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    token,
-                    action: 'deleteFile',
-                    key: file.key,
-                    namespace: 'files'
-                })
-            });
+            // Use openkbs Files API to delete
+            await openkbs.Files.deleteRawKBFile(file.name, 'files');
 
             // Refresh file list
             await listFiles();
+            setSystemAlert({
+                msg: 'File deleted successfully',
+                type: 'success',
+                duration: 3000
+            });
         } catch (err) {
             console.error('Error deleting file:', err);
             setError('Failed to delete file');
+            setSystemAlert({
+                msg: 'Failed to delete file',
+                type: 'error',
+                duration: 5000
+            });
         } finally {
             setLoading(false);
             setDeleteDialog({ open: false, file: null });
+        }
+    };
+
+    // Rename file
+        const renameFile = async () => {
+        if (!newFileName.trim() || !renameDialog.file) return;
+
+        // Close dialog immediately
+        const oldFileName = renameDialog.file.key;
+        const pathPrefix = currentPath.length > 0 ? currentPath.join('/') + '/' : '';
+        const newFileName_ = pathPrefix + newFileName;
+
+        setRenameDialog({ open: false, file: null });
+        setNewFileName('');
+
+        try {
+            setLoading(true);
+
+            // Use the new renameFile method from OpenKBS Files API
+            await openkbs.Files.renameFile(oldFileName, newFileName_, 'files');
+
+            // Refresh file list
+            await listFiles();
+            setSystemAlert({
+                msg: 'File renamed successfully',
+                type: 'success',
+                duration: 3000
+            });
+        } catch (err) {
+            console.error('Error renaming file:', err);
+            setError('Failed to rename file');
+            setSystemAlert({
+                msg: 'Failed to rename file',
+                type: 'error',
+                duration: 5000
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -204,7 +242,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     const loadShares = async () => {
         try {
             setLoading(true);
-            setSharingError('');
 
             const result = await openkbs.KBAPI.getKBShares();
             if (result && result.sharedWith) {
@@ -218,7 +255,11 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             }
         } catch (err) {
             console.error('Error loading shares:', err);
-            setSharingError('Failed to load shares');
+            setSystemAlert({
+                msg: 'Failed to load shares',
+                type: 'error',
+                duration: 5000
+            });
             setShares([]);
         } finally {
             setLoading(false);
@@ -228,26 +269,36 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     // Share with user
     const shareWithUser = async () => {
         if (!shareEmail.trim()) {
-            setSharingError('Please enter an email address');
+            setSystemAlert({
+                msg: 'Please enter an email address',
+                type: 'error',
+                duration: 3000
+            });
             return;
         }
 
         try {
             setLoading(true);
-            setSharingError('');
-            setSharingSuccess('');
 
             // Pass email directly as targetUserId - SDK will handle conversion if needed
             await openkbs.KBAPI.shareKBWith(shareEmail);
 
-            setSharingSuccess(`Successfully shared with ${shareEmail}`);
+            setSystemAlert({
+                msg: `Successfully shared with ${shareEmail}`,
+                type: 'success',
+                duration: 3000
+            });
             setShareEmail('');
 
             // Reload shares
             await loadShares();
         } catch (err) {
             console.error('Error sharing:', err);
-            setSharingError(err.message || 'Failed to share with user');
+            setSystemAlert({
+                msg: err.message || 'Failed to share with user',
+                type: 'error',
+                duration: 5000
+            });
         } finally {
             setLoading(false);
         }
@@ -257,14 +308,24 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     const removeShare = async (email) => {
         try {
             setLoading(true);
-            setSharingError('');
 
             // Pass email directly - SDK will handle conversion if needed
             await openkbs.KBAPI.unshareKBWith(email);
+
+            setSystemAlert({
+                msg: `Removed share with ${email}`,
+                type: 'success',
+                duration: 3000
+            });
+
             await loadShares();
         } catch (err) {
             console.error('Error removing share:', err);
-            setSharingError('Failed to remove share');
+            setSystemAlert({
+                msg: 'Failed to remove share',
+                type: 'error',
+                duration: 5000
+            });
         } finally {
             setLoading(false);
         }
@@ -274,7 +335,7 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     const loadMemoryItems = async (reset = false) => {
         try {
             setLoading(true);
-            if (setBlockingLoading) setBlockingLoading(true);
+            setBlockingLoading(true);
 
             const result = await openkbs.fetchItems({
                 itemType: 'memory',
@@ -308,15 +369,14 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             }
         } catch (err) {
             console.error('Error loading memory items:', err);
-            if (setSystemAlert) {
-                setSystemAlert({
-                    severity: 'error',
-                    message: 'Failed to load memory items'
-                });
-            }
+            setSystemAlert({
+                msg: 'Failed to load memory items',
+                type: 'error',
+                duration: 5000
+            });
         } finally {
             setLoading(false);
-            if (setBlockingLoading) setBlockingLoading(false);
+            setBlockingLoading(false);
         }
     };
 
@@ -325,21 +385,34 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
         try {
             setLoading(true);
 
-            let value = editValues.value;
-            // Try to parse as JSON if it looks like JSON
-            if (typeof value === 'string' && (value.trim().startsWith('{') || value.trim().startsWith('['))) {
-                try {
-                    value = JSON.parse(value);
-                } catch (e) {
-                    // Keep as string if not valid JSON
+            let value;
+
+            // If we have fields (object was edited), use those
+            if (editValues.fields) {
+                value = editValues.fields;
+            } else {
+                // String value
+                value = editValues.value;
+                // Try to parse as JSON if it looks like JSON
+                if (typeof value === 'string' && (value.trim().startsWith('{') || value.trim().startsWith('['))) {
+                    try {
+                        value = JSON.parse(value);
+                    } catch (e) {
+                        // Keep as string if not valid JSON
+                    }
                 }
             }
 
-            // Only pass the value, not any metadata fields
+            // Wrap in the standard structure
+            const body = {
+                value: value,
+                updatedAt: new Date().toISOString()
+            };
+
             await openkbs.updateItem({
                 itemType: 'memory',
                 itemId: itemId,
-                body: value
+                body: body
             });
 
             // Reload to get fresh data from backend
@@ -349,21 +422,18 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             setEditValues({});
 
             // Show success message
-            if (setSystemAlert) {
-                setSystemAlert({
-                    msg: `Successfully saved ${itemId}`,
-                    type: 'success',
-                    duration: 3000
-                });
-            }
+            setSystemAlert({
+                msg: `Successfully saved ${itemId}`,
+                type: 'success',
+                duration: 3000
+            });
         } catch (err) {
             console.error('Error saving memory item:', err);
-            if (setSystemAlert) {
-                setSystemAlert({
-                    severity: 'error',
-                    message: 'Failed to save memory item. Please try again.'
-                });
-            }
+            setSystemAlert({
+                msg: 'Failed to save memory item. Please try again.',
+                type: 'error',
+                duration: 5000
+            });
         } finally {
             setLoading(false);
         }
@@ -378,25 +448,22 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             await openkbs.deleteItem(itemId);
 
             // Show success message
-            if (setSystemAlert) {
-                setSystemAlert({
-                    msg: `Successfully deleted ${itemId}`,
-                    type: 'success',
-                    duration: 3000
-                });
-            }
+            setSystemAlert({
+                msg: `Successfully deleted ${itemId}`,
+                type: 'success',
+                duration: 3000
+            });
         } catch (err) {
             console.error('Error deleting memory item:', err);
 
             // Restore the item on error by reloading
             await loadMemoryItems(true);
 
-            if (setSystemAlert) {
-                setSystemAlert({
-                    severity: 'error',
-                    message: 'Failed to delete memory item. Please try again.'
-                });
-            }
+            setSystemAlert({
+                msg: 'Failed to delete memory item. Please try again.',
+                type: 'error',
+                duration: 5000
+            });
         }
     };
 
@@ -404,30 +471,18 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
     const createMemoryItem = async () => {
         try {
             if (!newItemKey.trim()) {
-                if (setSystemAlert) {
-                    setSystemAlert({
-                        severity: 'error',
-                        message: 'Please enter a key for the memory item'
-                    });
-                }
+                setSystemAlert({
+                    msg: 'Please enter a key for the memory item',
+                    type: 'error',
+                    duration: 3000
+                });
                 return;
             }
 
             setLoading(true);
 
-            let value = newItemValue.trim();
-            // Try to parse as JSON if it looks like JSON
-            if (value.startsWith('{') || value.startsWith('[')) {
-                try {
-                    value = JSON.parse(value);
-                } catch (e) {
-                    // Keep as string if not valid JSON
-                }
-            }
-            // If empty string, set as empty string (not null)
-            if (value === '') {
-                value = '';
-            }
+            // Keep value as string
+            const value = newItemValue.trim() || '';
 
             // Always ensure memory_ prefix
             const itemId = newItemKey.startsWith('memory_') ? newItemKey : `memory_${newItemKey}`;
@@ -452,21 +507,18 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             setNewItemValue('');
 
             // Show success message
-            if (setSystemAlert) {
-                setSystemAlert({
-                    msg: `Successfully created ${itemId}`,
-                    type: 'success',
-                    duration: 3000
-                });
-            }
+            setSystemAlert({
+                msg: `Successfully created ${itemId}`,
+                type: 'success',
+                duration: 3000
+            });
         } catch (err) {
             console.error('Error creating memory item:', err);
-            if (setSystemAlert) {
-                setSystemAlert({
-                    severity: 'error',
-                    message: 'Failed to create memory item. Please try again.'
-                });
-            }
+            setSystemAlert({
+                msg: 'Failed to create memory item. Please try again.',
+                type: 'error',
+                duration: 5000
+            });
         } finally {
             setLoading(false);
         }
@@ -617,15 +669,26 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                                                 }
                                             />
                                             {!item.isFolder && (
-                                                <IconButton
-                                                    edge="end"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDeleteDialog({ open: true, file: item });
-                                                    }}
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
+                                                <Box>
+                                                    <IconButton
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setRenameDialog({ open: true, file: item });
+                                                            setNewFileName(item.name);
+                                                        }}
+                                                    >
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        edge="end"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeleteDialog({ open: true, file: item });
+                                                        }}
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </Box>
                                             )}
                                         </ListItem>
                                     ))}
@@ -666,18 +729,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                                 </Button>
                             </Box>
 
-                            {/* Messages */}
-                            {sharingError && (
-                                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSharingError('')}>
-                                    {sharingError}
-                                </Alert>
-                            )}
-                            {sharingSuccess && (
-                                <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSharingSuccess('')}>
-                                    {sharingSuccess}
-                                </Alert>
-                            )}
-
                             {/* Current shares */}
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>
                                 Current Shares
@@ -697,10 +748,7 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                                             />
                                             <IconButton
                                                 edge="end"
-                                                onClick={() => {
-                                                    console.log('Removing share:', share);
-                                                    removeShare(share.email);
-                                                }}
+                                                onClick={() => removeShare(share.email)}
                                             >
                                                 <DeleteIcon />
                                             </IconButton>
@@ -719,27 +767,31 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                     {/* Memory Tab */}
                     {currentTab === 2 && (
                         <MemoryTab
-                            memoryItems={memoryItems}
-                            loading={loading}
-                            editingItem={editingItem}
-                            setEditingItem={setEditingItem}
-                            editValues={editValues}
-                            setEditValues={setEditValues}
-                            saveMemoryItem={saveMemoryItem}
-                            deleteMemoryItem={deleteMemoryItem}
-                            newItemDialog={newItemDialog}
-                            setNewItemDialog={setNewItemDialog}
-                            newItemKey={newItemKey}
-                            setNewItemKey={setNewItemKey}
-                            newItemValue={newItemValue}
-                            setNewItemValue={setNewItemValue}
-                            createMemoryItem={createMemoryItem}
-                            loadMoreItems={() => {
-                                setMemoryLimit(prev => prev + 20);
-                                loadMemoryItems();
+                            state={{
+                                memoryItems,
+                                loading,
+                                editingItem,
+                                editValues,
+                                newItemDialog,
+                                newItemKey,
+                                newItemValue,
+                                memoryHasMore
                             }}
-                            memoryHasMore={memoryHasMore}
-                            formatValue={formatValue}
+                            actions={{
+                                setEditingItem,
+                                setEditValues,
+                                saveMemoryItem,
+                                deleteMemoryItem,
+                                setNewItemDialog,
+                                setNewItemKey,
+                                setNewItemValue,
+                                createMemoryItem,
+                                loadMoreItems: () => {
+                                    setMemoryLimit(prev => prev + 20);
+                                    loadMemoryItems();
+                                },
+                                formatValue
+                            }}
                         />
                     )}
                 </Box>
@@ -760,6 +812,33 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                             variant="contained"
                         >
                             Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Rename Dialog */}
+                <Dialog open={renameDialog.open} onClose={() => { setRenameDialog({ open: false, file: null }); setNewFileName(''); }}>
+                    <DialogTitle>Rename File</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            fullWidth
+                            label="New filename"
+                            value={newFileName}
+                            onChange={(e) => setNewFileName(e.target.value)}
+                            sx={{ mt: 1 }}
+                            autoFocus
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => { setRenameDialog({ open: false, file: null }); setNewFileName(''); }}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={renameFile}
+                            variant="contained"
+                            disabled={!newFileName.trim()}
+                        >
+                            Rename
                         </Button>
                     </DialogActions>
                 </Dialog>

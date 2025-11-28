@@ -7,8 +7,8 @@
   "inputTools": [
     "speechToText"
   ],
-  "embeddingModel": "text-embedding-3-large",
-  "embeddingDimension": 3072,
+  "embeddingModel": "none",
+  "embeddingDimension": "none",
   "searchEngine": "VectorDB",
   "itemTypes": {
     "memory": {
