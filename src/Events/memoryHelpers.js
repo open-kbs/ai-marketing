@@ -46,13 +46,15 @@ export async function setMemoryValue(itemId, value, expirationInMinutes = null) 
         throw new Error(`Invalid memory itemId: "${itemId}". Must start with "memory_"`);
     }
 
-    const body = {
-        value,
-        updatedAt: new Date().toISOString()
-    };
+    // Just save the value directly, no wrapper object needed
+    let body = value;
 
+    // Only wrap in object if we need to add expiration
     if (expirationInMinutes != null) {
-        body.exp = new Date(Date.now() + expirationInMinutes * 60 * 1000).toISOString();
+        body = {
+            value,
+            exp: new Date(Date.now() + expirationInMinutes * 60 * 1000).toISOString()
+        };
     }
 
     return _upsertItem('memory', itemId, body);

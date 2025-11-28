@@ -37,14 +37,9 @@ import {
     AudioFile as AudioIcon,
     Archive as ZipIcon,
     Html as HtmlIcon,
-    Storage as StorageIcon,
-    Edit as EditIcon,
-    Save as SaveIcon,
-    Cancel as CancelIcon,
-    Add as AddIcon,
-    ExpandMore as ExpandMoreIcon,
-    ExpandLess as ExpandLessIcon
+    Storage as StorageIcon
 } from '@mui/icons-material';
+import MemoryTab from './MemoryTab';
 
 const KB_API_URL = 'https://kb.openkbs.com/';
 const isMobile = window.innerWidth < 960;
@@ -63,7 +58,7 @@ const getFileIcon = (filename) => {
 };
 
 
-const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
+const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAlert }) => {
     const [currentTab, setCurrentTab] = useState(initialTab);
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -80,7 +75,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
     const [memoryHasMore, setMemoryHasMore] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [editValues, setEditValues] = useState({});
-    const [expandedItems, setExpandedItems] = useState(new Set());
     const [newItemDialog, setNewItemDialog] = useState(false);
     const [newItemKey, setNewItemKey] = useState('');
     const [newItemValue, setNewItemValue] = useState('');
@@ -280,7 +274,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
     const loadMemoryItems = async (reset = false) => {
         try {
             setLoading(true);
-            setError(null);
 
             const result = await openkbs.fetchItems({
                 itemType: 'memory',
@@ -292,9 +285,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
             if (result && result.items) {
                 const items = result.items.map(({ item, meta }) => ({
                     itemId: meta.itemId,
-                    createdAt: meta.createdAt,
-                    updatedAt: meta.updatedAt,
-                    expiresAt: meta.expiresAt,
                     value: item.body
                 }));
 
@@ -308,7 +298,12 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
             }
         } catch (err) {
             console.error('Error loading memory items:', err);
-            setError('Failed to load memory items');
+            if (setSystemAlert) {
+                setSystemAlert({
+                    severity: 'error',
+                    message: 'Failed to load memory items'
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -329,22 +324,35 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
                 }
             }
 
+            // Only pass the value, not any metadata fields
             await openkbs.updateItem({
                 itemType: 'memory',
                 itemId: itemId,
                 body: value
             });
 
-            // Update local state
-            setMemoryItems(items => items.map(item =>
-                item.itemId === itemId ? { ...item, value, updatedAt: new Date().toISOString() } : item
-            ));
+            // Reload to get fresh data from backend
+            await loadMemoryItems(true);
 
             setEditingItem(null);
             setEditValues({});
+
+            // Show success message
+            if (setSystemAlert) {
+                setSystemAlert({
+                    msg: `Successfully saved ${itemId}`,
+                    type: 'success',
+                    duration: 3000
+                });
+            }
         } catch (err) {
             console.error('Error saving memory item:', err);
-            setError('Failed to save memory item');
+            if (setSystemAlert) {
+                setSystemAlert({
+                    severity: 'error',
+                    message: 'Failed to save memory item. Please try again.'
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -355,16 +363,27 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
         try {
             setLoading(true);
 
-            await openkbs.deleteItem({
-                itemType: 'memory',
-                itemId: itemId
-            });
+            await openkbs.deleteItem(itemId);
 
             // Remove from local state
             setMemoryItems(items => items.filter(item => item.itemId !== itemId));
+
+            // Show success message
+            if (setSystemAlert) {
+                setSystemAlert({
+                    msg: `Successfully deleted ${itemId}`,
+                    type: 'success',
+                    duration: 3000
+                });
+            }
         } catch (err) {
             console.error('Error deleting memory item:', err);
-            setError('Failed to delete memory item');
+            if (setSystemAlert) {
+                setSystemAlert({
+                    severity: 'error',
+                    message: 'Failed to delete memory item. Please try again.'
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -374,7 +393,12 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
     const createMemoryItem = async () => {
         try {
             if (!newItemKey.trim()) {
-                setError('Please enter a key for the memory item');
+                if (setSystemAlert) {
+                    setSystemAlert({
+                        severity: 'error',
+                        message: 'Please enter a key for the memory item'
+                    });
+                }
                 return;
             }
 
@@ -390,9 +414,11 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
                 }
             }
 
-            await openkbs.setItem({
+            // Always ensure memory_ prefix
+            const itemId = newItemKey.startsWith('memory_') ? newItemKey : `memory_${newItemKey}`;
+            await openkbs.updateItem({
                 itemType: 'memory',
-                itemId: `memory_${newItemKey.replace(/^memory_/, '')}`,
+                itemId: itemId,
                 body: value
             });
 
@@ -402,24 +428,28 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
             setNewItemDialog(false);
             setNewItemKey('');
             setNewItemValue('');
+
+            // Show success message
+            if (setSystemAlert) {
+                setSystemAlert({
+                    msg: `Successfully created ${itemId}`,
+                    type: 'success',
+                    duration: 3000
+                });
+            }
         } catch (err) {
             console.error('Error creating memory item:', err);
-            setError('Failed to create memory item');
+            if (setSystemAlert) {
+                setSystemAlert({
+                    severity: 'error',
+                    message: 'Failed to create memory item. Please try again.'
+                });
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    // Toggle item expansion
-    const toggleItemExpansion = (itemId) => {
-        const newExpanded = new Set(expandedItems);
-        if (newExpanded.has(itemId)) {
-            newExpanded.delete(itemId);
-        } else {
-            newExpanded.add(itemId);
-        }
-        setExpandedItems(newExpanded);
-    };
 
     // Format value for display
     const formatValue = (value) => {
@@ -666,197 +696,29 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange }) => {
 
                     {/* Memory Tab */}
                     {currentTab === 2 && (
-                        <Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">Memory Items</Typography>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => setNewItemDialog(true)}
-                                    size="small"
-                                >
-                                    Add Item
-                                </Button>
-                            </Box>
-
-                            {error && (
-                                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-                                    {error}
-                                </Alert>
-                            )}
-
-                            {loading && memoryItems.length === 0 ? (
-                                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                                    <CircularProgress />
-                                </Box>
-                            ) : (
-                                <>
-                                    <List>
-                                        {memoryItems.map((item) => {
-                                            const isEditing = editingItem === item.itemId;
-                                            const isExpanded = expandedItems.has(item.itemId);
-                                            const displayValue = formatValue(item.value);
-                                            const isLongValue = displayValue.length > 100;
-
-                                            return (
-                                                <ListItem
-                                                    key={item.itemId}
-                                                    sx={{
-                                                        flexDirection: 'column',
-                                                        alignItems: 'stretch',
-                                                        borderBottom: '1px solid #e0e0e0',
-                                                        py: 1
-                                                    }}
-                                                >
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                                                        <Box sx={{ flex: 1 }}>
-                                                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                                                {item.itemId}
-                                                            </Typography>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                Created: {new Date(item.createdAt).toLocaleString()}
-                                                                {item.updatedAt && ` • Updated: ${new Date(item.updatedAt).toLocaleString()}`}
-                                                                {item.expiresAt && ` • Expires: ${new Date(item.expiresAt).toLocaleString()}`}
-                                                            </Typography>
-                                                        </Box>
-                                                        <Box>
-                                                            {isEditing ? (
-                                                                <>
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => saveMemoryItem(item.itemId)}
-                                                                        color="primary"
-                                                                    >
-                                                                        <SaveIcon />
-                                                                    </IconButton>
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => {
-                                                                            setEditingItem(null);
-                                                                            setEditValues({});
-                                                                        }}
-                                                                    >
-                                                                        <CancelIcon />
-                                                                    </IconButton>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    {isLongValue && (
-                                                                        <IconButton
-                                                                            size="small"
-                                                                            onClick={() => toggleItemExpansion(item.itemId)}
-                                                                        >
-                                                                            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                                                        </IconButton>
-                                                                    )}
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => {
-                                                                            setEditingItem(item.itemId);
-                                                                            setEditValues({ value: displayValue });
-                                                                        }}
-                                                                    >
-                                                                        <EditIcon />
-                                                                    </IconButton>
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => deleteMemoryItem(item.itemId)}
-                                                                        color="error"
-                                                                    >
-                                                                        <DeleteIcon />
-                                                                    </IconButton>
-                                                                </>
-                                                            )}
-                                                        </Box>
-                                                    </Box>
-                                                    <Box sx={{ mt: 1 }}>
-                                                        {isEditing ? (
-                                                            <TextField
-                                                                fullWidth
-                                                                multiline
-                                                                rows={4}
-                                                                value={editValues.value || ''}
-                                                                onChange={(e) => setEditValues({ value: e.target.value })}
-                                                                variant="outlined"
-                                                                size="small"
-                                                            />
-                                                        ) : (
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    fontFamily: 'monospace',
-                                                                    whiteSpace: isExpanded ? 'pre-wrap' : 'nowrap',
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: isExpanded ? 'unset' : 'ellipsis',
-                                                                    backgroundColor: '#f5f5f5',
-                                                                    p: 1,
-                                                                    borderRadius: 1,
-                                                                    fontSize: '12px'
-                                                                }}
-                                                            >
-                                                                {isExpanded || !isLongValue ? displayValue : displayValue.substring(0, 100) + '...'}
-                                                            </Typography>
-                                                        )}
-                                                    </Box>
-                                                </ListItem>
-                                            );
-                                        })}
-                                    </List>
-                                    {memoryItems.length === 0 && (
-                                        <Typography sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-                                            No memory items yet
-                                        </Typography>
-                                    )}
-                                    {memoryHasMore && (
-                                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                                            <Button
-                                                onClick={() => {
-                                                    setMemoryLimit(prev => prev + 20);
-                                                    loadMemoryItems();
-                                                }}
-                                                disabled={loading}
-                                            >
-                                                Load More
-                                            </Button>
-                                        </Box>
-                                    )}
-                                </>
-                            )}
-
-                            {/* New Item Dialog */}
-                            <Dialog open={newItemDialog} onClose={() => setNewItemDialog(false)} maxWidth="sm" fullWidth>
-                                <DialogTitle>Add Memory Item</DialogTitle>
-                                <DialogContent>
-                                    <TextField
-                                        fullWidth
-                                        label="Key (without memory_ prefix)"
-                                        value={newItemKey}
-                                        onChange={(e) => setNewItemKey(e.target.value)}
-                                        sx={{ mb: 2, mt: 1 }}
-                                    />
-                                    <TextField
-                                        fullWidth
-                                        label="Value (string or JSON)"
-                                        value={newItemValue}
-                                        onChange={(e) => setNewItemValue(e.target.value)}
-                                        multiline
-                                        rows={4}
-                                    />
-                                </DialogContent>
-                                <DialogActions>
-                                    <Button onClick={() => {
-                                        setNewItemDialog(false);
-                                        setNewItemKey('');
-                                        setNewItemValue('');
-                                    }}>
-                                        Cancel
-                                    </Button>
-                                    <Button onClick={createMemoryItem} variant="contained">
-                                        Create
-                                    </Button>
-                                </DialogActions>
-                            </Dialog>
-                        </Box>
+                        <MemoryTab
+                            memoryItems={memoryItems}
+                            loading={loading}
+                            editingItem={editingItem}
+                            setEditingItem={setEditingItem}
+                            editValues={editValues}
+                            setEditValues={setEditValues}
+                            saveMemoryItem={saveMemoryItem}
+                            deleteMemoryItem={deleteMemoryItem}
+                            newItemDialog={newItemDialog}
+                            setNewItemDialog={setNewItemDialog}
+                            newItemKey={newItemKey}
+                            setNewItemKey={setNewItemKey}
+                            newItemValue={newItemValue}
+                            setNewItemValue={setNewItemValue}
+                            createMemoryItem={createMemoryItem}
+                            loadMoreItems={() => {
+                                setMemoryLimit(prev => prev + 20);
+                                loadMemoryItems();
+                            }}
+                            memoryHasMore={memoryHasMore}
+                            formatValue={formatValue}
+                        />
                     )}
                 </Box>
 
