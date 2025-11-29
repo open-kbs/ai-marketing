@@ -537,9 +537,9 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
         if (currentTab === 0) {
             listFiles();
         } else if (currentTab === 1) {
-            loadShares();
-        } else if (currentTab === 2) {
             loadMemoryItems(true);
+        } else if (currentTab === 2) {
+            loadShares();
         }
     }, [currentTab, currentPath]);
 
@@ -598,13 +598,13 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                             iconPosition="start"
                         />
                         <Tab
-                            icon={<AccessIcon />}
-                            label="Access"
+                            icon={<StorageIcon />}
+                            label="Memory"
                             iconPosition="start"
                         />
                         <Tab
-                            icon={<StorageIcon />}
-                            label="Memory"
+                            icon={<AccessIcon />}
+                            label="Access"
                             iconPosition="start"
                         />
                     </Tabs>
@@ -702,8 +702,39 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                         </>
                     )}
 
-                    {/* Access Tab */}
+                    {/* Memory Tab */}
                     {currentTab === 1 && (
+                        <MemoryTab
+                            state={{
+                                memoryItems,
+                                loading,
+                                editingItem,
+                                editValues,
+                                newItemDialog,
+                                newItemKey,
+                                newItemValue,
+                                memoryHasMore
+                            }}
+                            actions={{
+                                setEditingItem,
+                                setEditValues,
+                                saveMemoryItem,
+                                deleteMemoryItem,
+                                setNewItemDialog,
+                                setNewItemKey,
+                                setNewItemValue,
+                                createMemoryItem,
+                                loadMoreItems: () => {
+                                    setMemoryLimit(prev => prev + 20);
+                                    loadMemoryItems();
+                                },
+                                formatValue
+                            }}
+                        />
+                    )}
+
+                    {/* Access Tab */}
+                    {currentTab === 2 && (
                         <Box>
                             <Typography variant="h6" sx={{ mb: 2 }}>
                                 Share Access
@@ -762,37 +793,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
                                 </List>
                             )}
                         </Box>
-                    )}
-
-                    {/* Memory Tab */}
-                    {currentTab === 2 && (
-                        <MemoryTab
-                            state={{
-                                memoryItems,
-                                loading,
-                                editingItem,
-                                editValues,
-                                newItemDialog,
-                                newItemKey,
-                                newItemValue,
-                                memoryHasMore
-                            }}
-                            actions={{
-                                setEditingItem,
-                                setEditValues,
-                                saveMemoryItem,
-                                deleteMemoryItem,
-                                setNewItemDialog,
-                                setNewItemKey,
-                                setNewItemValue,
-                                createMemoryItem,
-                                loadMoreItems: () => {
-                                    setMemoryLimit(prev => prev + 20);
-                                    loadMemoryItems();
-                                },
-                                formatValue
-                            }}
-                        />
                     )}
                 </Box>
 

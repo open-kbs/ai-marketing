@@ -27,8 +27,8 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs, setSystemAl
         return panelParam === 'files' || panelParam === 'access' || panelParam === 'memory';
     });
     const [initialTab] = useState(() => {
-        if (panelParam === 'access') return 1;
-        if (panelParam === 'memory') return 2;
+        if (panelParam === 'memory') return 1;
+        if (panelParam === 'access') return 2;
         return 0;
     });
 
@@ -97,7 +97,7 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs, setSystemAl
                     onClick={() => setPanelExpanded(true, 'files')}
                     sx={{
                         position: 'absolute',
-                        top: window.innerWidth < 960 ? '90px' : '110px',
+                        top: window.innerWidth < 960 ? '70px' : '90px',
                         left: window.innerWidth < 960 ? '20px' : '340px',
                         backgroundColor: 'white',
                         color: 'primary.main',
@@ -122,7 +122,7 @@ const Header = ({ setRenderSettings, messages, setMessages, openkbs, setSystemAl
                 <AgentPanel
                     openkbs={openkbs}
                     initialTab={initialTab}
-                    onTabChange={(tab) => setPanelExpanded(true, tab === 0 ? 'files' : tab === 1 ? 'access' : 'memory')}
+                    onTabChange={(tab) => setPanelExpanded(true, tab === 0 ? 'files' : tab === 1 ? 'memory' : 'access')}
                     onClose={() => setPanelExpanded(false)}
                     setSystemAlert={setSystemAlert}
                     setBlockingLoading={setBlockingLoading}
