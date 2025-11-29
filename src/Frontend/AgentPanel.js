@@ -153,6 +153,9 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
 
     // Delete file
     const deleteFile = async (file) => {
+        // Close dialog immediately
+        setDeleteDialog({ open: false, file: null });
+
         try {
             setLoading(true);
 
@@ -176,7 +179,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
             });
         } finally {
             setLoading(false);
-            setDeleteDialog({ open: false, file: null });
         }
     };
 
@@ -469,23 +471,30 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
 
     // Create new memory item
     const createMemoryItem = async () => {
-        try {
-            if (!newItemKey.trim()) {
-                setSystemAlert({
-                    msg: 'Please enter a key for the memory item',
-                    type: 'error',
-                    duration: 3000
-                });
-                return;
-            }
+        if (!newItemKey.trim()) {
+            setSystemAlert({
+                msg: 'Please enter a key for the memory item',
+                type: 'error',
+                duration: 3000
+            });
+            return;
+        }
 
+        // Close dialog immediately
+        const keyToUse = newItemKey;
+        const valueToUse = newItemValue;
+        setNewItemDialog(false);
+        setNewItemKey('');
+        setNewItemValue('');
+
+        try {
             setLoading(true);
 
             // Keep value as string
-            const value = newItemValue.trim() || '';
+            const value = valueToUse.trim() || '';
 
             // Always ensure memory_ prefix
-            const itemId = newItemKey.startsWith('memory_') ? newItemKey : `memory_${newItemKey}`;
+            const itemId = keyToUse.startsWith('memory_') ? keyToUse : `memory_${keyToUse}`;
 
             // Wrap in the same structure as setMemory uses
             const body = {
@@ -501,10 +510,6 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
 
             // Reload items
             await loadMemoryItems(true);
-
-            setNewItemDialog(false);
-            setNewItemKey('');
-            setNewItemValue('');
 
             // Show success message
             setSystemAlert({
