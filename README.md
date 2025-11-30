@@ -76,4 +76,4 @@ Simple and effective memory management with automatic cleanup:
 
 ## License
 
-MIT License
+MIT License# ai-marketing
