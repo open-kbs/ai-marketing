@@ -66,7 +66,8 @@ const onRenderChatMessage = async (params) => {
 
         // Don't hide special response types that have their own rendering
         const hasSpecialRendering = (JSONData.type === 'CHAT_IMAGE' && JSONData.data?.imageUrl) ||
-                                    (JSONData.type === 'CHAT_VIDEO' && JSONData.data?.videoUrl);
+                                    (JSONData.type === 'CHAT_VIDEO' && JSONData.data?.videoUrl) ||
+                                    (JSONData.type === 'VISUAL_MULTI_RESPONSE' && Array.isArray(JSONData.data));
 
         if (!hasSpecialRendering) {
             // Check if previous message had a command
@@ -86,6 +87,46 @@ const onRenderChatMessage = async (params) => {
     // Handle CHAT_IMAGE type JSON data
     if (JSONData?.type === 'CHAT_IMAGE' && JSONData?.data?.imageUrl) {
         return <ImageWithDownload imageUrl={JSONData.data.imageUrl} />;
+    }
+
+    // Handle CHAT_VIDEO type JSON data
+    if (JSONData?.type === 'CHAT_VIDEO' && JSONData?.data?.videoUrl) {
+        return (
+            <video
+                src={JSONData.data.videoUrl}
+                controls
+                style={{ width: '100%', maxWidth: 600, borderRadius: 8 }}
+            />
+        );
+    }
+
+    // Handle VISUAL_MULTI_RESPONSE - multiple images/videos generated in parallel
+    if (JSONData?.type === 'VISUAL_MULTI_RESPONSE' && Array.isArray(JSONData?.data)) {
+        return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', maxWidth: '100%' }}>
+                {JSONData.data.map((item, idx) => {
+                    if (item?.type === 'CHAT_IMAGE' && item?.data?.imageUrl) {
+                        return (
+                            <div key={`img-${idx}`} style={{ flex: '1 1 calc(50% - 6px)', minWidth: 200, maxWidth: 400 }}>
+                                <ImageWithDownload imageUrl={item.data.imageUrl} />
+                            </div>
+                        );
+                    }
+                    if (item?.type === 'CHAT_VIDEO' && item?.data?.videoUrl) {
+                        return (
+                            <div key={`vid-${idx}`} style={{ flex: '1 1 100%' }}>
+                                <video
+                                    src={item.data.videoUrl}
+                                    controls
+                                    style={{ width: '100%', maxWidth: 600, borderRadius: 8 }}
+                                />
+                            </div>
+                        );
+                    }
+                    return null;
+                })}
+            </div>
+        );
     }
 
     // Check if content contains any command tags
