@@ -16,6 +16,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import DescriptionIcon from '@mui/icons-material/Description';
 import BoltIcon from '@mui/icons-material/Bolt';
+import ImageWithDownload from './ImageWithDownload';
 
 // Icon mappings for different command types
 const commandIcons = {
@@ -355,6 +356,56 @@ const CommandRenderer = ({ content, responseData, markdownHandler }) => {
                     fontWeight: 500
                 }}>
                     ⏳ Please wait and DO NOT refresh your browser! Video is generating...
+                </Box>
+            )}
+
+            {/* Render single CHAT_IMAGE */}
+            {responseData && responseData.type === 'CHAT_IMAGE' && responseData.data?.imageUrl && (
+                <Box sx={{ mt: 2 }}>
+                    <ImageWithDownload imageUrl={responseData.data.imageUrl} />
+                </Box>
+            )}
+
+            {/* Render single CHAT_VIDEO */}
+            {responseData && responseData.type === 'CHAT_VIDEO' && responseData.data?.videoUrl && (
+                <Box sx={{ mt: 2 }}>
+                    <video
+                        src={responseData.data.videoUrl}
+                        controls
+                        style={{ width: '100%', maxWidth: 600, borderRadius: 8 }}
+                    />
+                </Box>
+            )}
+
+            {/* Render MULTI_RESPONSE with multiple images/videos */}
+            {responseData && responseData.type === 'MULTI_RESPONSE' && Array.isArray(responseData.data) && (
+                <Box sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    mt: 2,
+                    maxWidth: '100%'
+                }}>
+                    {responseData.data
+                        .filter(item => item?.type === 'CHAT_IMAGE' && item?.data?.imageUrl)
+                        .map((item, idx) => (
+                            <Box key={`img-${idx}`} sx={{ flex: '1 1 calc(50% - 6px)', minWidth: 200, maxWidth: 400 }}>
+                                <ImageWithDownload imageUrl={item.data.imageUrl} />
+                            </Box>
+                        ))
+                    }
+                    {responseData.data
+                        .filter(item => item?.type === 'CHAT_VIDEO' && item?.data?.videoUrl)
+                        .map((item, idx) => (
+                            <Box key={`vid-${idx}`} sx={{ flex: '1 1 100%' }}>
+                                <video
+                                    src={item.data.videoUrl}
+                                    controls
+                                    style={{ width: '100%', maxWidth: 600, borderRadius: 8 }}
+                                />
+                            </Box>
+                        ))
+                    }
                 </Box>
             )}
         </Box>
