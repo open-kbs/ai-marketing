@@ -246,41 +246,52 @@ const CommandRenderer = ({ content, responseData, markdownHandler }) => {
 
     const contentParts = parseContentWithText();
 
-    // Render mixed content
+    // Group consecutive commands together
+    const groupedParts = [];
+    let currentCommands = [];
+
+    for (const part of contentParts) {
+        if (part.type === 'command') {
+            currentCommands.push(part);
+        } else {
+            if (currentCommands.length > 0) {
+                groupedParts.push({ type: 'commands', commands: currentCommands });
+                currentCommands = [];
+            }
+            groupedParts.push(part);
+        }
+    }
+    if (currentCommands.length > 0) {
+        groupedParts.push({ type: 'commands', commands: currentCommands });
+    }
+
     return (
         <Box sx={{ my: 1 }}>
-            {contentParts.map((part, index) => {
+            {groupedParts.map((part, index) => {
                 if (part.type === 'text') {
-                    // Use markdownHandler if available, otherwise render as plain text
                     if (markdownHandler) {
                         return (
-                            <Box key={`text-${index}`} sx={{ display: 'inline-block', verticalAlign: 'top' }}>
+                            <Box key={`text-${index}`} sx={{ display: 'block' }}>
                                 {markdownHandler(part.content)}
                             </Box>
                         );
-                    } else {
-                        return (
-                            <Typography
-                                key={`text-${index}`}
-                                component="span"
-                                sx={{
-                                    display: 'inline',
-                                    mr: 1,
-                                    verticalAlign: 'middle'
-                                }}
-                            >
-                                {part.content}
-                            </Typography>
-                        );
                     }
-                } else if (part.type === 'command') {
                     return (
-                        <Box key={`cmd-${index}`} sx={{ display: 'inline-block', mx: 0.5, verticalAlign: 'middle' }}>
-                            <CommandCircle
-                                command={part.command}
-                                index={part.index}
-                                response={part.response}
-                            />
+                        <Typography key={`text-${index}`} component="div" sx={{ mb: 1 }}>
+                            {part.content}
+                        </Typography>
+                    );
+                } else if (part.type === 'commands') {
+                    return (
+                        <Box key={`cmds-${index}`} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 1 }}>
+                            {part.commands.map((cmd, cmdIdx) => (
+                                <CommandCircle
+                                    key={`cmd-${cmdIdx}`}
+                                    command={cmd.command}
+                                    index={cmd.index}
+                                    response={cmd.response}
+                                />
+                            ))}
                         </Box>
                     );
                 }
