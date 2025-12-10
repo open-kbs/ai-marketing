@@ -289,7 +289,7 @@ export const getActions = (meta, event) => [
         }
     }],
 
-    // View specific image
+    // Load image into LLM vision context for analysis
     [/<viewImage>([\s\S]*?)<\/viewImage>/s, async (match) => {
         try {
             const content = match[1].trim();
@@ -298,7 +298,7 @@ export const getActions = (meta, event) => [
 
             return {
                 data: [
-                    { type: "text", text: `Viewing image: ${imageUrl}` },
+                    { type: "text", text: `Image loaded for analysis: ${imageUrl}` },
                     { type: "image_url", image_url: { url: imageUrl } }
                 ],
                 _meta_actions: ["REQUEST_CHAT_MODEL"]

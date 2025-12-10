@@ -93,8 +93,8 @@ const CommandCircle = ({ command, index, response }) => {
                     </>
                 )}
 
-                {/* Response */}
-                {response && (
+                {/* Response - skip CONTINUE and meta events */}
+                {response && response.type !== 'CONTINUE' && !response._meta_type && (
                     <>
                         <Typography variant="caption" sx={{
                             color: response.error ? '#FF6B6B' : '#81C784',
