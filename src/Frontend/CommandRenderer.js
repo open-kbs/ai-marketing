@@ -1,61 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Tooltip, Typography, Zoom, Chip } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ImageIcon from '@mui/icons-material/Image';
-import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import LanguageIcon from '@mui/icons-material/Language';
-import EmailIcon from '@mui/icons-material/Email';
-import SearchIcon from '@mui/icons-material/Search';
-import CollectionsIcon from '@mui/icons-material/Collections';
-import ArticleIcon from '@mui/icons-material/Article';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import ClearIcon from '@mui/icons-material/Clear';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import DescriptionIcon from '@mui/icons-material/Description';
+import { Box, Tooltip, Typography, Zoom } from '@mui/material';
 import BoltIcon from '@mui/icons-material/Bolt';
-
-// Icon mappings for different command types
-const commandIcons = {
-    setMemory: SaveIcon,
-    deleteItem: DeleteIcon,
-    createAIImage: ImageIcon,
-    createAIVideo: VideoLibraryIcon,
-    continueVideoPolling: HourglassEmptyIcon,
-    publishWebPage: LanguageIcon,
-    sendMail: EmailIcon,
-    googleSearch: SearchIcon,
-    googleImageSearch: CollectionsIcon,
-    viewImage: ImageIcon,
-    webpageToText: ArticleIcon,
-    scheduleTask: ScheduleIcon,
-    getScheduledTasks: ListAltIcon,
-    deleteScheduledTask: ClearIcon,
-    getSora2PromptingGuide: MenuBookIcon,
-    getWebPublishingGuide: DescriptionIcon
-};
-
-// List of valid command names
-const validCommands = [
-    'getSora2PromptingGuide',
-    'getWebPublishingGuide',
-    'createAIImage',
-    'createAIVideo',
-    'continueVideoPolling',
-    'publishWebPage',
-    'sendMail',
-    'googleSearch',
-    'googleImageSearch',
-    'viewImage',
-    'webpageToText',
-    'setMemory',
-    'deleteItem',
-    'scheduleTask',
-    'getScheduledTasks',
-    'deleteScheduledTask'
-];
+import { getCommandIcon, isValidCommand } from './commands';
 
 // Parse commands from content
 const parseCommands = (content) => {
@@ -68,8 +14,7 @@ const parseCommands = (content) => {
     while ((match = regex.exec(content)) !== null) {
         const commandName = match[1];
 
-        // Only process if it's a valid command
-        if (!validCommands.includes(commandName)) {
+        if (!isValidCommand(commandName)) {
             continue;
         }
 
@@ -97,7 +42,7 @@ const parseCommands = (content) => {
 // Single command circle component
 const CommandCircle = ({ command, index, response }) => {
     const [hovering, setHovering] = useState(false);
-    const IconComponent = commandIcons[command.name] || BoltIcon;
+    const IconComponent = getCommandIcon(command.name) || BoltIcon;
 
     // Determine if command has completed (has response)
     const hasResponse = !!response;

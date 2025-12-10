@@ -1,9 +1,5 @@
 import {getActions} from './actions.js';
 
-const VISUAL_TYPES = ['CHAT_IMAGE', 'CHAT_VIDEO', 'VIDEO_PENDING'];
-
-const isVisualOutput = (r) => VISUAL_TYPES.includes(r?.type);
-
 const isContentArray = (r) => {
     return Array.isArray(r?.data) && r.data.some(item => item?.type === 'image_url');
 };
@@ -34,23 +30,7 @@ export const backendHandler = async (event) => {
         const results = await Promise.all(pendingActions);
         const meta = getMeta(results);
 
-        if (results.length === 1) {
-            if (isVisualOutput(results[0])) {
-                return results[0];
-            }
-            return { type: 'API_RESPONSE', data: results[0], _meta_actions: meta };
-        }
-
-        const visual = results.filter(isVisualOutput);
-        if (visual.length) {
-            const other = results.filter(r => !isVisualOutput(r));
-            const response = { type: 'VISUAL_MULTI_RESPONSE', data: visual, _meta_actions: meta };
-            if (other.length) {
-                response.otherData = other;
-            }
-            return response;
-        }
-
+        // Handle image_url content arrays (for LLM vision)
         if (results.some(isContentArray)) {
             const mergedData = [];
             for (const r of results) {
@@ -63,7 +43,7 @@ export const backendHandler = async (event) => {
             return { data: mergedData, _meta_actions: meta };
         }
 
-        return { type: 'MULTI_RESPONSE', data: results, _meta_actions: meta };
+        return { type: 'RESPONSE', results, _meta_actions: meta };
     } catch (error) {
         return { type: 'ERROR', error: error.message, _meta_actions: ["REQUEST_CHAT_MODEL"] };
     }
