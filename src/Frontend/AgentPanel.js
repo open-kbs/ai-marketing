@@ -341,9 +341,7 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
 
             const result = await openkbs.fetchItems({
                 itemType: 'memory',
-                limit: memoryLimit,
-                sortBy: 'createdAt',
-                sortOrder: 'desc'
+                limit: memoryLimit
             });
 
             if (result && result.items) {

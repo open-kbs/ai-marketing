@@ -12,9 +12,7 @@ export const handler = async (event, context) => {
     /*
     const memoryItems = await openkbs.fetchItems({
         beginsWith: 'memory_',
-        limit: 10,
-        sortBy: 'updatedAt',
-        sortOrder: 'desc'
+        limit: 10
     });
 
     if (memoryItems?.items?.length > 0) {
