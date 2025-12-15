@@ -26,6 +26,7 @@
 
 ```bash
 npm install -g openkbs
+openkbs login
 git clone git@github.com:open-kbs/ai-marketing.git
 cd ai-marketing
 openkbs push
