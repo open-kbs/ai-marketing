@@ -403,7 +403,7 @@ export const getActions = (meta, event) => [
                     type: 'DEEP_RESEARCH_PENDING',
                     data: {
                         interactionId: researchData.interaction_id,
-                        prepaidCredits: researchData.prepaid_credits || 50000,
+                        prepaidCredits: researchData.prepaid_credits,
                         message: '🔬 Deep research in progress. This may take 5-20 minutes. Use continueDeepResearchPolling to check status.'
                     },
                     ...meta
@@ -433,7 +433,7 @@ export const getActions = (meta, event) => [
             const content = match[1].trim();
             const data = JSON.parse(content);
             const interactionId = data.interactionId;
-            const prepaidCredits = data.prepaidCredits || 50000;
+            const prepaidCredits = data.prepaidCredits || 0;
 
             if (!interactionId) {
                 return { error: 'Missing interactionId for deep research polling', ...meta };
@@ -456,7 +456,7 @@ export const getActions = (meta, event) => [
                     type: 'DEEP_RESEARCH_PENDING',
                     data: {
                         interactionId: interactionId,
-                        prepaidCredits: researchData.prepaid_credits || prepaidCredits,
+                        prepaidCredits: researchData.prepaid_credits,
                         message: '🔬 Deep research still in progress. Please wait and continue polling.'
                     },
                     ...meta

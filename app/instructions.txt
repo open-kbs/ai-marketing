@@ -126,7 +126,7 @@ Use previous_interaction_id for follow-up questions on completed research.
 <continueDeepResearchPolling>
 {
   "interactionId": "interaction_id_from_previous_response",
-  "prepaidCredits": 50000
+  "prepaidCredits": "from_previous_response"
 }
 </continueDeepResearchPolling>
 Description: """
