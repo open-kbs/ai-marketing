@@ -313,6 +313,36 @@ const CommandRenderer = ({ content, responseData, markdownHandler }) => {
                     ⏳ Please wait and DO NOT refresh your browser! Video is generating...
                 </Box>
             )}
+            {responseData && responseData.type === 'DEEP_RESEARCH_PENDING' && (
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    ml: 1,
+                    padding: '8px 16px',
+                    backgroundColor: '#e3f2fd',
+                    border: '1px solid #2196f3',
+                    borderRadius: '8px',
+                    color: '#1565c0',
+                    fontSize: '13px',
+                    fontWeight: 500
+                }}>
+                    <Box sx={{
+                        display: 'inline-block',
+                        width: 16,
+                        height: 16,
+                        border: '2px solid #1565c0',
+                        borderTopColor: 'transparent',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        '@keyframes spin': {
+                            '0%': { transform: 'rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg)' }
+                        }
+                    }} />
+                    Deep research in progress. This may take 5-20 minutes...
+                </Box>
+            )}
         </Box>
     );
 };

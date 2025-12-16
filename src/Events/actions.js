@@ -377,6 +377,100 @@ export const getActions = (meta, event) => [
         }
     }],
 
+    // Deep Research - autonomous multi-step research agent (takes 5-60 minutes)
+    // Requires minimum upfront charge of 50 credits (~€0.50)
+    [/<deepResearch>([\s\S]*?)<\/deepResearch>/s, async (match) => {
+        try {
+            const content = match[1].trim();
+            const data = JSON.parse(content);
+
+            const input = data.query || data.input;
+            const previousInteractionId = data.previous_interaction_id;
+
+            if (!input) {
+                return { error: 'Missing query/input for deep research', ...meta };
+            }
+
+            const params = {};
+            if (previousInteractionId) {
+                params.previous_interaction_id = previousInteractionId;
+            }
+
+            const researchData = await openkbs.deepResearch(input, params);
+
+            if (researchData?.status === 'in_progress') {
+                return {
+                    type: 'DEEP_RESEARCH_PENDING',
+                    data: {
+                        interactionId: researchData.interaction_id,
+                        prepaidCredits: researchData.prepaid_credits || 50000,
+                        message: '🔬 Deep research in progress. This may take 5-20 minutes. Use continueDeepResearchPolling to check status.'
+                    },
+                    ...meta
+                };
+            }
+
+            if (researchData?.status === 'completed' && researchData?.output) {
+                return {
+                    type: 'DEEP_RESEARCH_COMPLETED',
+                    data: {
+                        interactionId: researchData.interaction_id,
+                        output: researchData.output,
+                        usage: researchData.usage
+                    },
+                    ...meta
+                };
+            }
+
+            return { error: 'Deep research failed - unexpected response', ...meta };
+        } catch (error) {
+            return { error: error.message || 'Deep research failed', ...meta };
+        }
+    }],
+
+    [/<continueDeepResearchPolling>([\s\S]*?)<\/continueDeepResearchPolling>/s, async (match) => {
+        try {
+            const content = match[1].trim();
+            const data = JSON.parse(content);
+            const interactionId = data.interactionId;
+            const prepaidCredits = data.prepaidCredits || 50000;
+
+            if (!interactionId) {
+                return { error: 'Missing interactionId for deep research polling', ...meta };
+            }
+
+            const researchData = await openkbs.checkDeepResearchStatus(interactionId, prepaidCredits);
+
+            if (researchData?.status === 'completed' && researchData?.output) {
+                return {
+                    type: 'DEEP_RESEARCH_COMPLETED',
+                    data: {
+                        interactionId: researchData.interaction_id,
+                        output: researchData.output,
+                        usage: researchData.usage
+                    },
+                    ...meta
+                };
+            } else if (researchData?.status === 'in_progress') {
+                return {
+                    type: 'DEEP_RESEARCH_PENDING',
+                    data: {
+                        interactionId: interactionId,
+                        prepaidCredits: researchData.prepaid_credits || prepaidCredits,
+                        message: '🔬 Deep research still in progress. Please wait and continue polling.'
+                    },
+                    ...meta
+                };
+            } else if (researchData?.status === 'failed') {
+                return { error: 'Deep research failed', ...meta };
+            }
+
+            return { error: 'Unable to get deep research status', ...meta };
+        } catch (error) {
+            return { error: error.message || 'Failed to check deep research status', ...meta };
+        }
+    }],
+
     // Email sending with JSON
     [/<sendMail>([\s\S]*?)<\/sendMail>/s, async (match) => {
         try {

@@ -104,6 +104,36 @@ Description: """
 Get results from Google Image Search API. Optional limit parameter (default: 10).
 """
 
+<deepResearch>
+{
+  "query": "Comprehensive research topic or question",
+  "previous_interaction_id": "optional - for follow-up questions"
+}
+</deepResearch>
+Description: """
+Autonomous deep research agent powered by Google Gemini.
+Performs multi-step research: plans → searches web → reads sources → iterates → synthesizes report.
+
+IMPORTANT: Takes 5-20 minutes (up to 60 min for complex topics).
+- Returns detailed research report with citations
+- Can search the web and analyze multiple sources
+- Best for: market research, competitive analysis, trend reports, comprehensive topic overviews
+
+If status is 'in_progress', use continueDeepResearchPolling with the interactionId to check status.
+Use previous_interaction_id for follow-up questions on completed research.
+"""
+
+<continueDeepResearchPolling>
+{
+  "interactionId": "interaction_id_from_previous_response",
+  "prepaidCredits": 50000
+}
+</continueDeepResearchPolling>
+Description: """
+Continue polling for deep research status when previous attempt is still in progress.
+Include prepaidCredits from the previous response to ensure correct billing.
+"""
+
 <getSora2PromptingGuide/>
 Description: """
 Comprehensive Sora 2 prompting guide with best practices, templates, and examples.
