@@ -10,11 +10,82 @@ const HIDDEN = JSON.stringify({ type: 'HIDDEN_MESSAGE' });
 const isVisualResult = (r) => {
     return (r?.type === 'CHAT_IMAGE' && r?.data?.imageUrl) ||
            (r?.type === 'CHAT_VIDEO' && r?.data?.videoUrl) ||
-           r?.type === 'VIDEO_PENDING';
+           r?.type === 'VIDEO_PENDING' ||
+           r?.type === 'DEEP_RESEARCH_PENDING' ||
+           r?.type === 'DEEP_RESEARCH_COMPLETED';
 };
 
 const getQueryParamValue = (paramName) => {
     return new URLSearchParams(window.location.search).get(paramName);
+};
+
+const DeepResearchResult = ({ data }) => {
+    const [expanded, setExpanded] = React.useState(false);
+    const output = data?.output || '';
+    const usage = data?.usage || {};
+    const previewLength = 500;
+    const needsExpand = output.length > previewLength;
+
+    return (
+        <div style={{
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #e0e0e0',
+            borderRadius: 12,
+            padding: 16,
+            maxWidth: '100%'
+        }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 12,
+                paddingBottom: 12,
+                borderBottom: '1px solid #e0e0e0'
+            }}>
+                <span style={{ fontSize: 24 }}>🔬</span>
+                <span style={{ fontWeight: 600, fontSize: 16, color: '#1565c0' }}>Deep Research Complete</span>
+                {usage.input_tokens !== undefined && (
+                    <span style={{
+                        marginLeft: 'auto',
+                        fontSize: 11,
+                        color: '#666',
+                        backgroundColor: '#e3f2fd',
+                        padding: '2px 8px',
+                        borderRadius: 4
+                    }}>
+                        {((usage.input_tokens || 0) + (usage.output_tokens || 0)).toLocaleString()} tokens
+                    </span>
+                )}
+            </div>
+            <div style={{
+                fontSize: 14,
+                lineHeight: 1.6,
+                color: '#333',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+            }}>
+                {expanded ? output : output.substring(0, previewLength) + (needsExpand ? '...' : '')}
+            </div>
+            {needsExpand && (
+                <button
+                    onClick={() => setExpanded(!expanded)}
+                    style={{
+                        marginTop: 12,
+                        padding: '6px 16px',
+                        backgroundColor: '#1565c0',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        fontWeight: 500
+                    }}
+                >
+                    {expanded ? 'Show Less' : 'Show Full Report'}
+                </button>
+            )}
+        </div>
+    );
 };
 
 const renderVisualResults = (results) => {
@@ -39,6 +110,13 @@ const renderVisualResults = (results) => {
                                 controls
                                 style={{ width: '100%', maxWidth: 600, borderRadius: 8 }}
                             />
+                        </div>
+                    );
+                }
+                if (item?.type === 'DEEP_RESEARCH_COMPLETED' && item?.data) {
+                    return (
+                        <div key={`research-${idx}`} style={{ flex: '1 1 100%' }}>
+                            <DeepResearchResult data={item.data} />
                         </div>
                     );
                 }

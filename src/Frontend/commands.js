@@ -15,6 +15,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import BiotechIcon from '@mui/icons-material/Biotech';
 
 // Single source of truth for all commands
 // selfClosing: true means <command/>, false means <command>...</command>
@@ -37,7 +38,9 @@ export const COMMANDS = {
     getScheduledTasks: { icon: ListAltIcon, selfClosing: true },
     deleteScheduledTask: { icon: ClearIcon },
     archiveItems: { icon: ArchiveIcon },
-    searchArchive: { icon: ManageSearchIcon }
+    searchArchive: { icon: ManageSearchIcon },
+    deepResearch: { icon: BiotechIcon },
+    continueDeepResearchPolling: { icon: HourglassEmptyIcon }
 };
 
 // Generate regex patterns from commands
