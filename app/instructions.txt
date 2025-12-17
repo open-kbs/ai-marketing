@@ -166,16 +166,31 @@ Delete a memory item by its itemId.
 {
   "model": "gemini-2.5-flash-image",
   "aspect_ratio": "16:9",
-  "imageUrls": ["optional reference image URLs"],
-  "prompt": "image generation prompt in English"
+  "imageUrls": ["https://example.com/image.jpg"],
+  "prompt": "Edit or compose images - description in English"
+}
+</createAIImage>
+or for text rendering / image editing with better quality:
+<createAIImage>
+{
+  "model": "gpt-image-1",
+  "size": "1024x1024",
+  "imageUrls": ["https://example.com/ref1.jpg", "https://example.com/ref2.jpg"],
+  "prompt": "Combine reference images into a gift basket with 'Happy Birthday' text"
 }
 </createAIImage>
 Description: """
-Two models: gemini-2.5-flash-image and gpt-image-1
+Two models: gemini-2.5-flash-image (nano banana) and gpt-image-1
 
-Model selection:
-- Image editing/URLs → gemini-2.5-flash-image (supports aspect ratios: 1:1, 16:9, 9:16, 3:2, 2:3, 4:3, 3:4, 4:5, 5:4, 21:9)
-- Text-to-image with special characters → gpt-image-1 (sizes: 1024x1024, 1536x1024, 1024x1536, no image input support)
+Both models support imageUrls for reference/editing:
+- nano banana: Fast, cheap, photorealistic. Supports aspect_ratio (1:1, 16:9, 9:16, 3:2, 2:3, 4:3, 3:4, 4:5, 5:4, 21:9)
+- gpt-image-1: Stylized, cinematic, better text. Supports size (1024x1024, 1536x1024, 1024x1536)
+
+When to use which:
+- Realistic photos, products, faces, pets → nano banana (photorealism, natural colors)
+- Text, logos, signage, artistic style, anime → gpt-image-1 (better text rendering, stylized look)
+- Consistent characters across series → nano banana (better consistency)
+- Combining multiple images into one → gpt-image-1
 """
 
 <createAIVideo>
