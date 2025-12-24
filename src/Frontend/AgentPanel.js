@@ -385,8 +385,15 @@ const AgentPanel = ({ openkbs, onClose, initialTab = 0, onTabChange, setSystemAl
         try {
             setLoading(true);
 
-            // Use jsonValue from JsonEditor directly
-            let value = editValues.jsonValue;
+            // Parse JSON text or keep as string
+            let value = editValues.jsonText;
+            if (typeof value === 'string') {
+                try {
+                    value = JSON.parse(value);
+                } catch (e) {
+                    // Keep as string if not valid JSON
+                }
+            }
 
             // Wrap in the standard structure
             const body = {

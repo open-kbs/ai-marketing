@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     List,
@@ -11,7 +11,8 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    CircularProgress
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -20,7 +21,6 @@ import {
     Cancel as CancelIcon,
     Add as AddIcon
 } from '@mui/icons-material';
-import { JsonEditor } from 'json-edit-react';
 
 const MemoryTab = ({ state, actions }) => {
     const {
@@ -46,6 +46,19 @@ const MemoryTab = ({ state, actions }) => {
         loadMoreItems,
         formatValue
     } = actions;
+
+    const [jsonError, setJsonError] = useState(null);
+
+    // Validate JSON on change
+    const handleJsonChange = (value) => {
+        setEditValues({ jsonText: value });
+        try {
+            JSON.parse(value);
+            setJsonError(null);
+        } catch (e) {
+            setJsonError(e.message);
+        }
+    };
 
     return (
         <Box>
@@ -91,8 +104,12 @@ const MemoryTab = ({ state, actions }) => {
                                                 <>
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => saveMemoryItem(item.itemId)}
+                                                        onClick={() => {
+                                                            setJsonError(null);
+                                                            saveMemoryItem(item.itemId);
+                                                        }}
                                                         color="primary"
+                                                        disabled={!!jsonError}
                                                     >
                                                         <SaveIcon />
                                                     </IconButton>
@@ -101,6 +118,7 @@ const MemoryTab = ({ state, actions }) => {
                                                         onClick={() => {
                                                             setEditingItem(null);
                                                             setEditValues({});
+                                                            setJsonError(null);
                                                         }}
                                                     >
                                                         <CancelIcon />
@@ -112,8 +130,12 @@ const MemoryTab = ({ state, actions }) => {
                                                         size="small"
                                                         onClick={() => {
                                                             setEditingItem(item.itemId);
-                                                            // Store the raw value for JsonEditor
-                                                            setEditValues({ jsonValue: item.value });
+                                                            // Store as formatted JSON string
+                                                            const jsonStr = typeof item.value === 'string'
+                                                                ? item.value
+                                                                : JSON.stringify(item.value, null, 2);
+                                                            setEditValues({ jsonText: jsonStr });
+                                                            setJsonError(null);
                                                         }}
                                                     >
                                                         <EditIcon />
@@ -131,20 +153,29 @@ const MemoryTab = ({ state, actions }) => {
                                     </Box>
                                     <Box sx={{ mt: 1 }}>
                                         {isEditing ? (
-                                            <Box sx={{
-                                                border: '1px solid #e0e0e0',
-                                                borderRadius: 1,
-                                                overflow: 'hidden'
-                                            }}>
-                                                <JsonEditor
-                                                    data={editValues.jsonValue}
-                                                    setData={(newData) => setEditValues({ jsonValue: newData })}
-                                                    theme="githubLight"
-                                                    rootName={item.itemId.replace('memory_', '')}
-                                                    collapse={2}
-                                                    enableClipboard={true}
-                                                    minWidth="100%"
+                                            <Box>
+                                                <TextField
+                                                    fullWidth
+                                                    multiline
+                                                    minRows={4}
+                                                    maxRows={20}
+                                                    value={editValues.jsonText || ''}
+                                                    onChange={(e) => handleJsonChange(e.target.value)}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    error={!!jsonError}
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            fontFamily: 'monospace',
+                                                            fontSize: '13px'
+                                                        }
+                                                    }}
                                                 />
+                                                {jsonError && (
+                                                    <Alert severity="error" sx={{ mt: 1, py: 0 }}>
+                                                        Invalid JSON: {jsonError}
+                                                    </Alert>
+                                                )}
                                             </Box>
                                         ) : (
                                             <Typography
@@ -202,8 +233,14 @@ const MemoryTab = ({ state, actions }) => {
                         value={newItemValue}
                         onChange={(e) => setNewItemValue(e.target.value)}
                         multiline
-                        rows={3}
+                        rows={4}
                         helperText="Enter JSON object or simple text value"
+                        sx={{
+                            '& .MuiInputBase-input': {
+                                fontFamily: 'monospace',
+                                fontSize: '13px'
+                            }
+                        }}
                     />
                 </DialogContent>
                 <DialogActions>
