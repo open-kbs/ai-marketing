@@ -20,6 +20,7 @@ import {
     Cancel as CancelIcon,
     Add as AddIcon
 } from '@mui/icons-material';
+import { JsonEditor } from 'json-edit-react';
 
 const MemoryTab = ({ state, actions }) => {
     const {
@@ -45,6 +46,7 @@ const MemoryTab = ({ state, actions }) => {
         loadMoreItems,
         formatValue
     } = actions;
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -110,11 +112,8 @@ const MemoryTab = ({ state, actions }) => {
                                                         size="small"
                                                         onClick={() => {
                                                             setEditingItem(item.itemId);
-                                                            if (typeof item.value === 'object' && item.value !== null && !Array.isArray(item.value)) {
-                                                                setEditValues({ fields: { ...item.value } });
-                                                            } else {
-                                                                setEditValues({ value: displayValue });
-                                                            }
+                                                            // Store the raw value for JsonEditor
+                                                            setEditValues({ jsonValue: item.value });
                                                         }}
                                                     >
                                                         <EditIcon />
@@ -132,87 +131,20 @@ const MemoryTab = ({ state, actions }) => {
                                     </Box>
                                     <Box sx={{ mt: 1 }}>
                                         {isEditing ? (
-                                            <Box>
-                                                {typeof item.value === 'object' && item.value !== null && !Array.isArray(item.value) ? (
-                                                    // Object editor
-                                                    <Box>
-                                                        {Object.entries(editValues.fields || item.value).map(([key, val]) => (
-                                                            <Box key={key} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                                                                <TextField
-                                                                    size="small"
-                                                                    label="Key"
-                                                                    value={key}
-                                                                    disabled
-                                                                    sx={{ width: '30%' }}
-                                                                />
-                                                                <TextField
-                                                                    size="small"
-                                                                    label="Value"
-                                                                    value={val}
-                                                                    onChange={(e) => {
-                                                                        const newFields = { ...(editValues.fields || item.value) };
-                                                                        newFields[key] = e.target.value;
-                                                                        setEditValues({ ...editValues, fields: newFields });
-                                                                    }}
-                                                                    sx={{ flex: 1 }}
-                                                                />
-                                                                <IconButton
-                                                                    size="small"
-                                                                    onClick={() => {
-                                                                        const newFields = { ...(editValues.fields || item.value) };
-                                                                        delete newFields[key];
-                                                                        setEditValues({ ...editValues, fields: newFields });
-                                                                    }}
-                                                                    color="error"
-                                                                >
-                                                                    <DeleteIcon />
-                                                                </IconButton>
-                                                            </Box>
-                                                        ))}
-                                                        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                                                            <TextField
-                                                                size="small"
-                                                                placeholder="New key"
-                                                                value={editValues.newKey || ''}
-                                                                onChange={(e) => setEditValues({ ...editValues, newKey: e.target.value })}
-                                                                sx={{ width: '30%' }}
-                                                            />
-                                                            <TextField
-                                                                size="small"
-                                                                placeholder="New value"
-                                                                value={editValues.newValue || ''}
-                                                                onChange={(e) => setEditValues({ ...editValues, newValue: e.target.value })}
-                                                                sx={{ flex: 1 }}
-                                                            />
-                                                            <Button
-                                                                size="small"
-                                                                variant="outlined"
-                                                                onClick={() => {
-                                                                    if (editValues.newKey) {
-                                                                        const newFields = { ...(editValues.fields || item.value) };
-                                                                        newFields[editValues.newKey] = editValues.newValue || '';
-                                                                        setEditValues({ ...editValues, fields: newFields, newKey: '', newValue: '' });
-                                                                    }
-                                                                }}
-                                                                disabled={!editValues.newKey}
-                                                            >
-                                                                Add
-                                                            </Button>
-                                                        </Box>
-                                                    </Box>
-                                                ) : (
-                                                    // String editor
-                                                    <TextField
-                                                        fullWidth
-                                                        multiline
-                                                        rows={3}
-                                                        value={editValues.value || ''}
-                                                        onChange={(e) => setEditValues({ value: e.target.value })}
-                                                        variant="outlined"
-                                                        size="small"
-                                                        label="Value"
-                                                    />
-                                                )}
+                                            <Box sx={{
+                                                border: '1px solid #e0e0e0',
+                                                borderRadius: 1,
+                                                overflow: 'hidden'
+                                            }}>
+                                                <JsonEditor
+                                                    data={editValues.jsonValue}
+                                                    setData={(newData) => setEditValues({ jsonValue: newData })}
+                                                    theme="githubLight"
+                                                    rootName={item.itemId.replace('memory_', '')}
+                                                    collapse={2}
+                                                    enableClipboard={true}
+                                                    minWidth="100%"
+                                                />
                                             </Box>
                                         ) : (
                                             <Typography
@@ -266,12 +198,12 @@ const MemoryTab = ({ state, actions }) => {
                     />
                     <TextField
                         fullWidth
-                        label="Value (enter as text)"
+                        label="Value (JSON or text)"
                         value={newItemValue}
                         onChange={(e) => setNewItemValue(e.target.value)}
                         multiline
                         rows={3}
-                        helperText="Enter a simple text value. You can edit it as an object later if needed."
+                        helperText="Enter JSON object or simple text value"
                     />
                 </DialogContent>
                 <DialogActions>
